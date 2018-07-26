@@ -1,1 +1,1 @@
-from LoadMC10 import load_mc10 as LoadMC10
+from .LoadMC10 import load_mc10 as LoadMC10

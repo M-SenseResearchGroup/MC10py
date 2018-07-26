@@ -12,4 +12,4 @@ def load_mc10(study_dir):
     -------
     """
 
-    pass
+    print('testing')
