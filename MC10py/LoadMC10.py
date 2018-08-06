@@ -1,6 +1,7 @@
 from os import walk, sep, listdir
 from numpy import loadtxt, ndarray, repeat, argmin, unique, full_like, zeros, argwhere, arange, mean, diff, interp,\
     array
+from scipy.interpolate import interp1d
 
 
 # TODO add option to create separate files for each subject
@@ -169,7 +170,9 @@ def _align_timestamps(subj_data):
         for sens in subj_data[loc].keys():
             ret_data[loc][sens] = zeros((len(time), len(subj_data[loc][sens][0, :])))
             for i in range(1, len(subj_data[loc][sens][0, :])):
-                ret_data[loc][sens][:, i] = interp(time, subj_data[loc][sens][:, 0], subj_data[loc][sens][:, i])
+                # ret_data[loc][sens][:, i] = interp(time, subj_data[loc][sens][:, 0], subj_data[loc][sens][:, i])
+                f = interp1d(subj_data[loc][sens][:, 0], subj_data[loc][sens][:, i], kind='cubic')
+                ret_data[loc][sens][:, i] = f(time)
             ret_data[loc][sens][:, 0] = time
 
     return ret_data
