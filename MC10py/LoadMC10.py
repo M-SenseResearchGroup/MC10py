@@ -1,12 +1,10 @@
-from os import walk, sep, listdir
+from os import walk, sep, listdir, path
 from numpy import loadtxt, ndarray, repeat, argmin, unique, full_like, zeros, argwhere, arange, mean, diff, interp,\
     array
 from scipy.interpolate import interp1d
 
 
-# TODO add option to create separate files for each subject
-# TODO add folder size check for memory issues (ie force separate files for each subject)
-def load_mc10(study_dir, segment=True, sync=True):
+def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save_subj=False, return_data=True):
     """
     Load raw MC10 data from a study directory containing folders for each subjected as downloaded from the
     BioStamp RC web portal
@@ -20,6 +18,18 @@ def load_mc10(study_dir, segment=True, sync=True):
     sync : bool, optional
         Synchronize the timestamps for the inertial sensors.  Timestamps for sensors with the same sampling rates
         will be the same.  All sensors will start at the same time, regardless of sampling rate.
+    save : bool, optional
+        Whether or not to save (serialize) the imported data.  Defaults to True.
+    save_loc : str, optional
+        Where to save the data.  Options are None (save in import location), 'import' saves in import location, 'local'
+        saves in the file location, or provide a file path where to save the data.  Defaults to None.
+    save_subj : bool, optional
+        Whether or not to save each subject as individual files.  This is particularly useful/necessary if each subject
+        contains a large amount of data that won't fit into memory.  Defaults to False.
+    return_data : bool, optional
+        Return the imported data as a dictionary (see Returns) if save is True.  If 'save' is False, then always returns
+        the imported data.
+
 
     Returns
     -------
