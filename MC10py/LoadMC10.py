@@ -4,6 +4,28 @@ from scipy.interpolate import interp1d
 from pickle import load as pload, dump as pdump
 
 
+def open_mc10(fpath):
+    """
+    Open saved (serialized) data previously imported with load_mc10
+
+    Parameters
+    ----------
+    fpath : str
+        Path to the file to be opened and loaded
+
+    Returns
+    -------
+    data : dict
+        Dictionary of saved data.  See load_mc10 for data structure
+    """
+
+    fid = open(fpath, 'rb')  # open the file
+    data = pload(fid)  # import data
+    fid.close()  # close the file
+
+    return data
+
+
 def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save_subj=False, return_data=True):
     """
     Load raw MC10 data from a study directory containing folders for each subjected as downloaded from the
