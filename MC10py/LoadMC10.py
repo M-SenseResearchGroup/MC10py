@@ -1,7 +1,7 @@
-from os import walk, sep, listdir, path
-from numpy import loadtxt, ndarray, repeat, argmin, unique, full_like, zeros, argwhere, arange, mean, diff, interp,\
-    array
+from os import walk, sep, listdir, getcwd, path
+from numpy import loadtxt, ndarray, repeat, argmin, unique, full_like, zeros, argwhere, arange, mean, diff, array
 from scipy.interpolate import interp1d
+from pickle import load as pload, dump as pdump
 
 
 def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save_subj=False, return_data=True):
@@ -24,8 +24,8 @@ def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save
         Where to save the data.  Options are None (save in import location), 'import' saves in import location, 'local'
         saves in the file location, or provide a file path where to save the data.  Defaults to None.
     save_subj : bool, optional
-        Whether or not to save each subject as individual files.  This is particularly useful/necessary if each subject
-        contains a large amount of data that won't fit into memory.  Defaults to False.
+        Whether or not to save each subject as individual files.  If True, sets 'return_data' to False.
+        Defaults to False.
     return_data : bool, optional
         Return the imported data as a dictionary (see Returns) if save is True.  If 'save' is False, then always returns
         the imported data.
@@ -33,9 +33,35 @@ def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save
 
     Returns
     -------
-    data : dict
-        Loaded data.  Top down structure is 'subject_id', 'sensor location', 'event id' (if segmenting), 'sensor_type'
+    save_paths : str, list, optional
+        Path to saved data file(s).  If 'save_subj' is true, is a list of all the subject files, else it is a str for
+        the path to the one saved file.
+    data : dict, optional
+        Loaded data.  This is returned if 'save' and 'return_data' are True, or 'save' is False.  Top down structure is
+        'subject_id', 'sensor location', 'event id' (if segmenting), 'sensor_type'
     """
+    if save:
+        if save_subj:  # if splitting subjs, do not return any data
+            return_data = False
+            save_paths = []
+
+        # Determine the file save location
+        if save_loc is None or save_loc == 'import':
+            save_path = study_dir
+        elif save_loc == 'local':
+            save_path = getcwd()
+        elif isinstance(save_loc, str):
+            if path.isdir(save_loc):
+                save_loc_split = save_loc.split(sep)
+                if save_loc_split[-1] == '':
+                    save_path = sep.joint(save_loc_split[:-1])
+                else:
+                    save_path = save_loc
+            else:
+                raise FileNotFoundError(f'No such directory: {save_loc}')
+    else:
+        save_subj = False
+        return_data = True
 
     bn = len(study_dir.split(sep))  # base length of study folder
 
@@ -71,11 +97,35 @@ def load_mc10(study_dir, segment=True, sync=True, save=True, save_loc=None, save
                                                              skiprows=1)
         if sync:
             temp = _align_timestamps(temp)  # align time stamps of data
+
         if segment:
             data[sub] = _segment_data(temp, starts, stops, events)  # segment the data
         else:
             data[sub] = temp
-    return data
+
+        if save_subj:
+            if save_loc is None or save_loc == 'import':
+                fid = open(save_path + sep + sub + sep + f'data_subj_{sub}.pickle', 'wb')
+                save_paths.append(save_path + sep + sub + sep + f'data_subj_{sub}.pickle')
+            else:
+                fid = open(save_path + sep + f'data_subj_{sub}.pickle', 'wb')
+                save_paths.append(save_path + sep + f'data_subj_{sub}.pickle')
+
+            pdump(data[sub], fid)  # serialize the data
+            fid.close()  # close the file
+
+    if not save_subj:
+        fid = open(save_path + sep + 'data.pickle', 'wb')
+        save_paths = save_path + sep + 'data.pickle'
+        pdump(data, fid)
+        fid.close()
+
+    if return_data and save:
+        return save_paths, data
+    elif save:
+        return save_paths
+    else:
+        return data
 
 
 class InputError(Exception):
