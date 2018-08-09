@@ -91,7 +91,8 @@ def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_lo
 
     bn = len(study_dir.split(sep))  # base length of study folder
 
-    subjs = list(listdir(study_dir))  # list all subfolders, which are subject IDs
+    subjs = [i for i in list(listdir(study_dir)) if path.isdir(study_dir + sep + i)]
+    # list all subfolders, which are subject IDs
 
     data = {i: dict() for i in subjs}  # allocate data storage for each subject
 
@@ -212,7 +213,7 @@ def _segment_data(data, start, stop, events, pre_time):
             # extract time data and repeat it for all events
             times = repeat(data[sens_loc][typ][:, 0].reshape((-1, 1)), start.size, axis=1)
 
-            dt = mean(diff(times))  # difference in time
+            dt = mean(diff(data[sens_loc][typ][:, 0]))/1000  # difference in time
             npt = int(round(pre_time/dt))  # numer of data points in pre_time
 
             start_inds = argmin(abs(times-start), axis=0)  # get the indices for the start times
