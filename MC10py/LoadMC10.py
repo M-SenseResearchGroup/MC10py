@@ -128,6 +128,9 @@ def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_lo
         if segment:
             data[sub] = _segment_data(temp, starts, stops, events, pre_time=pre_time)  # segment the data
         else:
+            for loc in temp.keys():
+                for typ in temp[loc].keys():
+                    temp[loc][typ][:, 0] /= 1000  # convert ms to s
             data[sub] = temp
 
         if save_subj:
@@ -221,6 +224,7 @@ def _segment_data(data, start, stop, events, pre_time):
 
             for ib, ie, ev in zip(start_inds, stop_inds, events):
                 split_data[sens_loc][typ][ev] = data[sens_loc][typ][ib-npt:ie, :]  # segment out the data of interest
+                split_data[sens_loc][typ][ev][:, 0] /= 1000  # convert ms to s
 
     return split_data
 
