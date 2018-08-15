@@ -27,7 +27,7 @@ def open_mc10(fpath):
 
 
 def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_loc=None, save_subj=False,
-              return_data=True):
+              start_time_0=True, return_data=True):
     """
     Load raw MC10 data from a study directory containing folders for each subjected as downloaded from the
     BioStamp RC web portal
@@ -52,10 +52,11 @@ def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_lo
     save_subj : bool, optional
         Whether or not to save each subject as individual files.  If True, sets 'return_data' to False.
         Defaults to False.
+    start_time_0 : bool, optional
+        Start the timestamps at 0 time for each event, or the whole trial. Defaults to True.
     return_data : bool, optional
         Return the imported data as a dictionary (see Returns) if save is True.  If 'save' is False, then always returns
         the imported data.
-
 
     Returns
     -------
@@ -126,11 +127,14 @@ def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_lo
             temp = _align_timestamps(temp)  # align time stamps of data
 
         if segment:
-            data[sub] = _segment_data(temp, starts, stops, events, pre_time=pre_time)  # segment the data
+            # segment the data
+            data[sub] = _segment_data(temp, starts, stops, events, pre_time=pre_time, zero_start=start_time_0)
         else:
             for loc in temp.keys():
                 for typ in temp[loc].keys():
                     temp[loc][typ][:, 0] /= 1000  # convert ms to s
+                    if start_time_0:
+                        temp[loc][typ][:, 0] -= temp[loc][typ][0, 0]
             data[sub] = temp
 
         if save_subj:
@@ -162,7 +166,7 @@ class InputError(Exception):
     pass
 
 
-def _segment_data(data, start, stop, events, pre_time):
+def _segment_data(data, start, stop, events, pre_time, zero_start=True):
     """
     Segments raw data into specific segments.  These are typically reported in the annotations.csv file for each
     subject
@@ -182,6 +186,8 @@ def _segment_data(data, start, stop, events, pre_time):
     pre_time : float, int
         Amount of time in seconds to import before the start annotation.  Only applied if 'segment' is True.
         Default is 0 seconds.
+    zero_start : bool
+        Start times at 0 for each event.  Default is True.
 
     Returns
     -------
@@ -225,6 +231,8 @@ def _segment_data(data, start, stop, events, pre_time):
             for ib, ie, ev in zip(start_inds, stop_inds, events):
                 split_data[sens_loc][typ][ev] = data[sens_loc][typ][ib-npt:ie, :]  # segment out the data of interest
                 split_data[sens_loc][typ][ev][:, 0] /= 1000  # convert ms to s
+                if zero_start:
+                    split_data[sens_loc][typ][ev][:, 0] -= split_data[sens_loc][typ][ev][0, 0]
 
     return split_data
 
