@@ -132,10 +132,15 @@ def load_mc10(study_dir, pre_time=0, segment=True, sync=True, save=True, save_lo
         else:
             for loc in temp.keys():
                 for typ in temp[loc].keys():
-                    temp[loc][typ][:, 0] /= 1000  # convert ms to s
                     if start_time_0:
                         temp[loc][typ][:, 0] -= temp[loc][typ][0, 0]
             data[sub] = temp
+
+        for loc in data[sub].keys():
+            for typ in data[sub][loc].keys():
+                for ev in data[sub][loc][typ].keys():
+                    print(1/mean(diff(data[sub][loc][typ][ev][:, 0])))
+                    data[sub][loc][typ][ev][:, 0] /= 1000  # convert all timestamps to ms
 
         if save_subj:
             if save_loc is None or save_loc == 'import':
@@ -230,7 +235,6 @@ def _segment_data(data, start, stop, events, pre_time, zero_start=True):
 
             for ib, ie, ev in zip(start_inds, stop_inds, events):
                 split_data[sens_loc][typ][ev] = data[sens_loc][typ][ib-npt:ie, :]  # segment out the data of interest
-                split_data[sens_loc][typ][ev][:, 0] /= 1000  # convert ms to s
                 if zero_start:
                     split_data[sens_loc][typ][ev][:, 0] -= split_data[sens_loc][typ][ev][0, 0]
 
